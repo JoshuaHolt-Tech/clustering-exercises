@@ -72,20 +72,18 @@ def find_na(df):
     return na_df
 
 def correlation_test(df, target_col, alpha=0.05):
-
+    """
+    Maybe create a function that automatically seperates continuous from discrete columns.
+    """
     
-    
-    df_corr = df.select_dtypes(include=[int, float])
-
     list_of_cols = df.select_dtypes(include=[int, float]).columns
-    
-    
+              
     metrics = []
     for col in list_of_cols:
         
         #Checks skew to pick a test
         if abs(df[target_col].skew()) > 0.5 or abs(df[col].skew()) > 0.5:
-            corr, p_value = stats.spearmanr(df[target_col], df[col], nan_policy='omit')
+            corr, p_value = stats.kendalltau(df[target_col], df[col], nan_policy='omit')
             test_type = 'Spearman R'
         else:
             # I'm unsure how this handles columns with null values in it.
