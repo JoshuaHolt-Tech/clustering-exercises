@@ -1,6 +1,19 @@
+import os
 import pandas as pd
 import numpy as np
-import os
+import matplotlib.pyplot as plt
+import seaborn as sns
+from scipy import stats
+
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import RobustScaler, MinMaxScaler, StandardScaler
+from sklearn.metrics import mean_squared_error
+
+
+#Removes warnings and imporves asthenics
+import warnings
+warnings.filterwarnings("ignore")
+
 from env import get_connection
 
 
@@ -40,3 +53,29 @@ def wrangle_zillow():
         
         # Return the dataframe to the calling code
         return df
+    
+def wrangle_mall():
+    """
+    This function gets all data from the mall_customers database.
+    """
+    filename = "mall_customers.csv"
+    
+    if os.path.isfile(filename):
+        return pd.read_csv(filename)
+    else:
+        
+        # read the SQL query into a dataframe
+        query = """
+        SELECT * FROM customers;
+        """
+
+        df = pd.read_sql(query, get_connection('mall_customers'))
+        
+        # Write that dataframe to disk for later. Called "caching" the data for later.
+        df.to_csv(filename, index=False)
+        
+        # Return the dataframe to the calling code
+        return df
+    
+
+
