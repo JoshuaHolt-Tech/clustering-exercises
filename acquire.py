@@ -47,7 +47,9 @@ def wrangle_zillow():
         """
 
         df = pd.read_sql(query, get_connection('zillow'))
-        
+        df['latitude'] = df['latitude'] / 10_000_000
+        df['longitude'] = df['longitude'] / 10_000_000
+        df.drop(columns-'id', inplace=True)
         # Write that dataframe to disk for later. Called "caching" the data for later.
         df.to_csv(filename, index=False)
         

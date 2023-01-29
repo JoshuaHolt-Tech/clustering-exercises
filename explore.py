@@ -66,7 +66,8 @@ def find_na(df):
                      }
 
         list_of_na.append(temp_dict)
-
+    print("The effect of dropping all rows with null values:")
+    df.describe() - df.dropna().describe()
     na_df = pd.DataFrame(list_of_na)
     na_df.set_index('column_name')
     return na_df
@@ -80,15 +81,16 @@ def correlation_test(df, target_col, alpha=0.05):
               
     metrics = []
     for col in list_of_cols:
-        
+        result = stats.anderson(df[col])
         #Checks skew to pick a test
-        if abs(df[target_col].skew()) > 0.5 or abs(df[col].skew()) > 0.5:
-            corr, p_value = stats.kendalltau(df[target_col], df[col], nan_policy='omit')
-            test_type = 'Spearman R'
+        if result.statistic < result.critical_values[2]:
+            corr, p_value = stats.pearsonr(df[target_col], df[col])
+            test_type = '(P)'
         else:
             # I'm unsure how this handles columns with null values in it.
-            corr, p_value = stats.pearsonr(df[target_col], df[col])
-            test_type = 'Pearson R'
+            corr, p_value = stats.spearmanr(df[target_col],
+                                            df[col], nan_policy='omit')
+            test_type = '(S)'
 
         #Answer logic
         if p_value < alpha:
@@ -96,7 +98,7 @@ def correlation_test(df, target_col, alpha=0.05):
         else:
             test_result = 'independent'
 
-        temp_metrics = {"Column":col,
+        temp_metrics = {"Column":f'{col} {test_type}',
                         "Correlation": corr,
                         "P Value": p_value,
                         "Test Result": test_result}
