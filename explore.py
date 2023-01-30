@@ -133,7 +133,7 @@ def correlation_test(df, target_col, alpha=0.05):
 def compare_num_cols(df, alpha=0.05):
 
     """
-    Maybe create a function that automatically seperates continuous from discrete columns.
+    Using DataFrame.corr() seems easier than running this.
     """
 
     list_of_cols = df.select_dtypes(include=[int, float]).columns

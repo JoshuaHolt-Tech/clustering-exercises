@@ -81,3 +81,26 @@ def wrangle_mall():
     
 
 
+def wrangle_iris():
+    """
+    This function gets all data from the iris database.
+    """
+    filename = "iris_db.csv"
+    
+    if os.path.isfile(filename):
+        return pd.read_csv(filename)
+    else:
+        
+        # read the SQL query into a dataframe
+        query = """
+        SELECT * FROM measurements 
+        LEFT JOIN species USING (species_id);
+        """
+
+        df = pd.read_sql(query, get_connection('iris_db'))
+        
+        # Write that dataframe to disk for later. Called "caching" the data for later.
+        df.to_csv(filename, index=False)
+        
+        # Return the dataframe to the calling code
+        return df
