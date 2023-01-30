@@ -116,7 +116,7 @@ def correlation_test(df, target_col, alpha=0.05):
     plt.hlines(y=my_range, xmin=-1, xmax=1, color='grey', alpha=0.4)
     sns.scatterplot(data=distro_df, x="Correlation",
                     y=my_range, hue="Test Result", palette=hue_colors,
-                    style="Test Result")
+                    style="Test Result", hue_order=hue_colors)
     plt.legend(title="Stats test result")
 
     # Add title and axis names
@@ -127,3 +127,77 @@ def correlation_test(df, target_col, alpha=0.05):
     
     #Saves plot when it has a name and uncommented
     #plt.savefig(f'{train.name}.png')
+    
+    
+    
+def compare_num_cols(df, alpha=0.05):
+
+    """
+    Maybe create a function that automatically seperates continuous from discrete columns.
+    """
+
+    list_of_cols = df.select_dtypes(include=[int, float]).columns
+    
+    for item in list_of_cols:
+        target_col = item
+        metrics = []
+        for col in list_of_cols:
+            result = stats.anderson(df[col])
+            #Checks skew to pick a test
+            if result.statistic < result.critical_values[2]:
+                corr, p_value = stats.pearsonr(df[target_col],
+                                               df[col])
+                test_type = '(P)'
+            else:
+                # I'm unsure how this handles columns with null values in it.
+                corr, p_value = stats.spearmanr(df[target_col],
+                                                df[col], nan_policy='omit')
+                test_type = '(S)'
+
+            #Answer logic
+            if p_value < alpha:
+                test_result = 'relationship'
+            else:
+                test_result = 'independent'
+
+            temp_metrics = {"Column":f'{col} {test_type}',
+                            "Correlation": corr,
+                            "P Value": p_value,
+                            "Test Result": test_result}
+            metrics.append(temp_metrics)
+
+        distro_df = pd.DataFrame(metrics)              
+        distro_df = distro_df.set_index('Column')
+
+
+        #Remove highly correlated features 
+        distro_df = distro_df[distro_df['Correlation'].abs() < 0.7]
+
+        #Column of absolute values
+        distro_df['Corr_abs'] = distro_df['Correlation'].abs()
+
+        #How do I get these items but in a while dataframe
+        distro_df = distro_df.sort_values('Corr_abs', ascending=False).head()
+
+        #Plotting the relationship with the target variable (and stats test result)
+        my_range=range(1,len(distro_df.index) + 1)
+        hue_colors = {'relationship': 'green', 'independent':'red'}
+
+        #This is the plotting section
+        plt.figure(figsize=(6,1.25))
+        plt.axvline(0, c='tomato', alpha=.6)
+
+        plt.hlines(y=my_range, xmin=-1, xmax=1, color='grey', alpha=0.4)
+        sns.scatterplot(data=distro_df, x="Correlation",
+                        y=my_range, hue="Test Result", palette=hue_colors,
+                        style="Test Result", hue_order=hue_colors)
+        plt.legend(title="Stats test result")
+
+        # Add title and axis names
+        plt.yticks(my_range, distro_df.index)
+        plt.title(f'Statistics tests of {target_col}', loc='center')
+        plt.xlabel('Neg Correlation            No Correlation            Pos Correlation')
+        plt.ylabel('Feature')
+
+        #Saves plot when it has a name and uncommented
+        #plt.savefig(f'{train.name}.png')

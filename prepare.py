@@ -152,3 +152,81 @@ def find_na(df):
     na_df = pd.DataFrame(list_of_na)
     na_df.set_index('column_name')
     return na_df
+
+def prep_data(df):
+    """
+    Target column should be in a yes/no, True/False, 0/1 format.
+    This function is not designed to handle null values.
+    Input DataFrame.
+    Outputs a DataFrame with binary 
+    columns as 0/1 and dummy columns.
+    """
+    
+    #Variable
+    dumb_columns = []
+
+    #Values that will be turned to an integer of  0 or 1
+    values_to_encode = {'Yes': 1, 'yes': 1, 'y': 0, 'Y': 1,
+                      True : 1, 'T': 1, 'True': 1, 't': 1,'true': 1,
+                      'No': 0, 'no': 0, 'n': 0, 'N' : 0,
+                      False : 0, 'F': 0, 'f': 0, 'False': 0, 'false':0,
+                       '0': 0, '1': 1}
+
+    #Seperate out object and bool data type columns into new df:
+    object_df = df.select_dtypes(include=['object','bool'])
+    
+    #For loop to find applicable columns
+    for col in object_df:
+        change = False
+
+        #Filter to check if the values are the correct length and in the values_to_encode dict
+        if (len(object_df[col].value_counts()) == 2):
+            for item in object_df[col].unique():
+                if item in values_to_encode.keys():
+                    change = True
+
+            #Swaps out old column with the new binary column
+            if change == True:
+                df = df.drop(columns=col)
+                df = pd.concat([df, object_df[col].replace(to_replace=values_to_encode).astype('int')],
+                               axis=1)                
+            else:
+                dumb_columns.append(object_df[col].name)
+            change = False
+
+        #Create dummy values for columns with < 6 unique values:        
+        elif (len(object_df[col].value_counts()) < 6 ):
+            dumb_columns.append(object_df[col].name)
+            
+    #Creates dummy columns based on list 'dumb_columns' and drops dummy source columns
+    dummy_df = pd.get_dummies(object_df[dumb_columns])
+    df = pd.concat([df, dummy_df], axis=1)
+    df.drop(columns=dumb_columns, inplace = True)
+    
+    return df
+
+
+
+def handle_missing_values(df, prop_required_column = .4, prop_required_row = .25):
+    """
+    This function drops columns then rows which contain a certain amount of null values.
+    """
+    #Lists to hold values
+    drop_cols = []
+    drop_rows = []
+    na_cols_not_drop = ['taxdelinquencyyear']
+    
+    #Finds columns with lots of na values
+    for col in df:
+        if (df[col].isna().sum()/len(df) > prop_required_column):
+            if col in na_cols_not_drop:
+                pass
+            else:
+                drop_cols.append(f'{col}')
+    #Drops columns with lots of na values        
+    df = df.drop(columns=drop_cols)
+    num_rows = int(len(df.columns) * prop_required_row)
+    #Drops rows with lots of na values
+    df = df.dropna(thresh=num_rows) 
+    
+    return df
